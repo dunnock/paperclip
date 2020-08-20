@@ -12,7 +12,13 @@ use std::collections::HashMap;
 pub struct Pet {
     /// Pick a good one.
     name: String,
-    id: Option<u64>,
+    id: Option<uuid::Uuid>,
+}
+
+#[derive(Serialize, Deserialize, Apiv2Schema)]
+pub struct Output {
+    /// Answer on question
+    answer: String,
 }
 
 #[derive(Deserialize, Serialize, Apiv2Schema)]
@@ -50,6 +56,14 @@ where
     }))
 }
 
+
+/// Any kind of a pet
+#[api_v2_operation]
+async fn get_answer() -> Result<web::Json<Output>, Error>
+{
+    Ok(web::Json(Output { answer: "earth has a shape of dino".to_string() }))
+}
+
 #[actix_rt::main]
 async fn main() {
     let mut tags = HashMap::new();
@@ -75,6 +89,7 @@ async fn main() {
                 web::resource("/random")
                     .route(web::post().to(some_pet))
                     .route(web::get().to(abstract_pet::<String, u16>)),
+                    .route(web::get().to(get_answer))
             )
             .with_json_spec_at("/api/spec")
             .build(),

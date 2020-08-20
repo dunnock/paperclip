@@ -1301,6 +1301,92 @@ fn test_security_app() {
     );
 }
 
+
+#[test]
+fn test_return_schema() {
+    #[derive(Serialize, Deserialize, Apiv2Schema)]
+    enum Sort {
+        Asc,
+        Desc,
+    }
+
+    #[derive(Serialize, Deserialize, Apiv2Schema)]
+    struct Output {
+        /// Answer on question
+        answer: String,
+    }
+
+    #[derive(Serialize, Deserialize, Apiv2Schema)]
+    struct AnotherAnswer {
+        /// Answer on question
+        answer: String,
+    }
+
+    #[api_v2_operation]
+    fn get_answer() -> impl Future<Output = web::Json<Output>> {
+        #[allow(unreachable_code)]
+        ready(unimplemented!())
+    }
+
+
+    #[api_v2_operation]
+    async fn get_answer2() -> Result<web::Json<AnotherAnswer>, Error> {
+        #[allow(unreachable_code)]
+        unimplemented!()
+    }
+
+    run_and_check_app(
+        || {
+            App::new()
+                .wrap_api()
+                .with_json_spec_at("/api/spec")
+                .service(web::resource("/answer").route(web::get().to(get_answer)))
+                .service(web::resource("/answer2").route(web::get().to(get_answer2)))
+                .build()
+        },
+        |addr| {
+            let resp = CLIENT
+                .get(&format!("http://{}/api/spec", addr))
+                .send()
+                .expect("request failed?");
+
+            check_json(
+                resp,
+                json!({
+                    "definitions": {
+                        "Output": {
+                          "properties": {
+                            "answer": {
+                              "description": "Answer on question",
+                              "type": "string"
+                            }
+                          },
+                          "required": ["answer"]
+                        }
+                      }, "info": {
+                        "title": "",
+                        "version": ""
+                      }, "paths": {
+                        "/pets": {
+                          "get": {
+                            "responses": {
+                              "200": {
+                                "description": "OK",
+                                "schema": {
+                                  "$ref": "#/definitions/Output"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }, "swagger": "2.0"
+                }),
+            );
+        },
+    );
+}
+
+
 fn run_and_check_app<F, G, T, B, U>(factory: F, check: G) -> U
 where
     F: Fn() -> App<T, B> + Clone + Send + Sync + 'static,
