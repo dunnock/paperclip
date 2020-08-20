@@ -33,7 +33,7 @@ async fn some_pet(_data: web::Data<String>, _pet: web::Json<Pet>) -> Result<web:
 }
 
 /// Any kind of a pet
-#[api_v2_operation()]
+#[api_v2_operation]
 async fn abstract_pet<P, T: 'static>(_data: web::Data<T>, mut _pet: web::Json<AbstractPet<P>>) -> Result<web::Json<Pet>, Error>
 where P: Serialize + for <'de> Deserialize< 'de> + 'static
 {
