@@ -14,7 +14,6 @@ use syn::{
     FieldsUnnamed, Generics, Ident, ItemFn, Lit, Meta, NestedMeta, PathArguments, ReturnType,
     Token, TraitBound, Type,
 };
-use std::iter::FromIterator;
 
 const SCHEMA_MACRO_ATTR: &str = "openapi";
 

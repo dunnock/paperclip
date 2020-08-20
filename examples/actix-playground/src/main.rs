@@ -57,8 +57,8 @@ async fn main() {
     let mut app = test::init_service(
         app_wrapper
         .service(web::resource("/random")
-            .route(web::post().to(some_pet))//.tags(tags.get("pets").unwrap())
-            .route(web::get().to(abstract_pet::<String, u16>))//.tags(tags.get("pets").unwrap())
+            .route(web::post().to(some_pet))
+            .route(web::get().to(abstract_pet::<String, u16>))
         )
 
         .with_json_spec_at("/api/spec")

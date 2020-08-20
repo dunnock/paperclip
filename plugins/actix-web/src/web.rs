@@ -140,15 +140,6 @@ where
         self
     }
 
-    // pub fn tags(mut self, tags: &Vec<Tag>) -> Self {
-    //     self.tags = tags.clone().into();
-    //     // let tags = self.tags.clone().into_iter().map(|t|t.name).collect::<Vec<String>>();
-    //     // for mut op in self.operations.iter_mut() {
-    //     //     op.1.tags = tags.clone()
-    //     // }
-    //     self
-    // }
-
     /// Proxy for [`actix_web::Resource::data`](https://docs.rs/actix-web/*/actix_web/struct.Resource.html#method.data).
     ///
     /// **NOTE:** This doesn't affect spec generation.
@@ -307,8 +298,6 @@ where
         self.definitions.extend(F::definitions().into_iter());
         SecurityScheme::append_map(F::security_definitions(), &mut self.security);
     }
-
-
 }
 
 /// Wrapper for [`actix_web::web::resource`](https://docs.rs/actix-web/*/actix_web/web/fn.resource.html).
