@@ -12,7 +12,7 @@ use actix_web::dev::{
 };
 use actix_web::guard::Guard;
 use actix_web::{http::Method, Error, FromRequest, Responder};
-use paperclip_core::v2::models::{DefaultOperationRaw, DefaultPathItemRaw, DefaultSchemaRaw, HttpMethod, SecurityScheme, Tag};
+use paperclip_core::v2::models::{DefaultOperationRaw, DefaultPathItemRaw, DefaultSchemaRaw, HttpMethod, SecurityScheme};
 use paperclip_core::v2::schema::Apiv2Operation;
 
 use std::collections::BTreeMap;
@@ -34,7 +34,6 @@ const METHODS: &[Method] = &[
 /* Resource */
 /// Wrapper for [`actix_web::Resource`](https://docs.rs/actix-web/*/actix_web/struct.Resource.html)
 pub struct Resource<R = actix_web::Resource> {
-    tags: Vec<Tag>,
     path: String,
     operations: BTreeMap<HttpMethod, DefaultOperationRaw>,
     definitions: BTreeMap<String, DefaultSchemaRaw>,
@@ -46,7 +45,6 @@ impl Resource {
     /// Wrapper for [`actix_web::Resource::new`](https://docs.rs/actix-web/*/actix_web/struct.Resource.html#method.new).
     pub fn new(path: &str) -> Resource {
         Resource {
-            tags: vec![],
             path: path.into(),
             operations: BTreeMap::new(),
             definitions: BTreeMap::new(),
@@ -224,7 +222,6 @@ where
         >,
     {
         Resource {
-            tags: self.tags,
             path: self.path,
             operations: self.operations,
             definitions: self.definitions,
@@ -255,7 +252,6 @@ where
         R: Future<Output = Result<ServiceResponse, Error>>,
     {
         Resource {
-            tags: self.tags,
             path: self.path,
             operations: self.operations,
             definitions: self.definitions,
