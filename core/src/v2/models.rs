@@ -601,6 +601,8 @@ pub type DefaultOperationRaw = Operation<DefaultParameterRaw, DefaultResponseRaw
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Operation<P, R> {
+    #[serde(default)]
+    pub tags: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub operation_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

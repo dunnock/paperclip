@@ -6,7 +6,7 @@ use http::StatusCode;
 use lazy_static::lazy_static;
 use proc_macro::TokenStream;
 use quote::quote;
-use std::collections::HashMap;
+use std::collections::{HashMap};
 use strum_macros::EnumString;
 use syn::spanned::Spanned;
 use syn::{
@@ -14,6 +14,7 @@ use syn::{
     FieldsUnnamed, Generics, Ident, ItemFn, Lit, Meta, NestedMeta, PathArguments, ReturnType,
     Token, TraitBound, Type,
 };
+use std::iter::FromIterator;
 
 const SCHEMA_MACRO_ATTR: &str = "openapi";
 
@@ -29,7 +30,7 @@ lazy_static! {
 /// **NOTE:** This is a no-op right now. It's only reserved for
 /// future use to avoid introducing breaking changes.
 #[cfg(feature = "actix-operation")]
-pub fn emit_v2_operation(input: TokenStream) -> TokenStream {
+pub fn emit_v2_operation(attr: TokenStream, input: TokenStream) -> TokenStream {
     let mut item_ast: ItemFn = match syn::parse(input) {
         Ok(s) => s,
         Err(e) => {
@@ -125,6 +126,7 @@ pub fn emit_v2_operation(input: TokenStream) -> TokenStream {
         let docs = extract_documentation(&item_ast.attrs);
         let mut lines = docs.lines();
         let summary = lines.next().map(|line| quote!(Some(#line.to_string()))).unwrap_or(quote!(None));
+
         let description = lines.collect::<String>().trim().to_string();
         let description = if !description.is_empty() {
             quote!(Some(#description.to_string()))
@@ -132,6 +134,12 @@ pub fn emit_v2_operation(input: TokenStream) -> TokenStream {
             quote!(None)
         };
         let main_code = item_ast.block;
+
+        let  tags_string = match  attr.into_iter().next() {
+            Some(t) => t.to_string(),
+            None => "".to_string()
+        };
+        let tags_string = quote!(#tags_string.to_string());
 
         quote!(
             fn #boxed_fn #generics(#inputs) -> #ret_fut #generics_where {
@@ -148,6 +156,11 @@ pub fn emit_v2_operation(input: TokenStream) -> TokenStream {
                 #ret
             >  #generics_where {
                 let mut operation = paperclip::v2::models::DefaultOperationRaw::default();
+
+                if #tags_string != "" {
+                    operation.tags = #tags_string.replace('"', "").split(',').map(|s|s.to_string()).collect::<Vec<String>>();
+                }
+
                 operation.summary = #summary;
                 operation.description = #description;
                 paperclip::actix::OperationWrapper::new(operation, #boxed_fn #generics_call)

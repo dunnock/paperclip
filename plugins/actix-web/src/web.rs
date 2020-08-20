@@ -12,9 +12,7 @@ use actix_web::dev::{
 };
 use actix_web::guard::Guard;
 use actix_web::{http::Method, Error, FromRequest, Responder};
-use paperclip_core::v2::models::{
-    DefaultOperationRaw, DefaultPathItemRaw, DefaultSchemaRaw, HttpMethod, SecurityScheme,
-};
+use paperclip_core::v2::models::{DefaultOperationRaw, DefaultPathItemRaw, DefaultSchemaRaw, HttpMethod, SecurityScheme, Tag};
 use paperclip_core::v2::schema::Apiv2Operation;
 
 use std::collections::BTreeMap;
@@ -32,10 +30,11 @@ const METHODS: &[Method] = &[
     Method::PATCH,
 ];
 
-/* Resource */
 
+/* Resource */
 /// Wrapper for [`actix_web::Resource`](https://docs.rs/actix-web/*/actix_web/struct.Resource.html)
 pub struct Resource<R = actix_web::Resource> {
+    tags: Vec<Tag>,
     path: String,
     operations: BTreeMap<HttpMethod, DefaultOperationRaw>,
     definitions: BTreeMap<String, DefaultSchemaRaw>,
@@ -47,6 +46,7 @@ impl Resource {
     /// Wrapper for [`actix_web::Resource::new`](https://docs.rs/actix-web/*/actix_web/struct.Resource.html#method.new).
     pub fn new(path: &str) -> Resource {
         Resource {
+            tags: vec![],
             path: path.into(),
             operations: BTreeMap::new(),
             definitions: BTreeMap::new(),
@@ -140,6 +140,15 @@ where
         self
     }
 
+    // pub fn tags(mut self, tags: &Vec<Tag>) -> Self {
+    //     self.tags = tags.clone().into();
+    //     // let tags = self.tags.clone().into_iter().map(|t|t.name).collect::<Vec<String>>();
+    //     // for mut op in self.operations.iter_mut() {
+    //     //     op.1.tags = tags.clone()
+    //     // }
+    //     self
+    // }
+
     /// Proxy for [`actix_web::Resource::data`](https://docs.rs/actix-web/*/actix_web/struct.Resource.html#method.data).
     ///
     /// **NOTE:** This doesn't affect spec generation.
@@ -184,6 +193,7 @@ where
         let operation = wrapper();
         let mut op = operation.operation();
         op.set_parameter_names_from_path_template(&self.path);
+
         for method in METHODS {
             self.operations.insert(method.into(), op.clone());
         }
@@ -223,6 +233,7 @@ where
         >,
     {
         Resource {
+            tags: self.tags,
             path: self.path,
             operations: self.operations,
             definitions: self.definitions,
@@ -253,6 +264,7 @@ where
         R: Future<Output = Result<ServiceResponse, Error>>,
     {
         Resource {
+            tags: self.tags,
             path: self.path,
             operations: self.operations,
             definitions: self.definitions,
@@ -295,6 +307,8 @@ where
         self.definitions.extend(F::definitions().into_iter());
         SecurityScheme::append_map(F::security_definitions(), &mut self.security);
     }
+
+
 }
 
 /// Wrapper for [`actix_web::web::resource`](https://docs.rs/actix-web/*/actix_web/web/fn.resource.html).

@@ -8,10 +8,7 @@ use actix_service::ServiceFactory;
 use actix_web::dev::{HttpServiceFactory, MessageBody, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{web::HttpResponse, Error};
 use futures::future::{ok as fut_ok, Ready};
-use paperclip_core::v2::models::{
-    DefaultApiRaw, DefaultOperationRaw, DefaultPathItemRaw, DefaultSchemaRaw, HttpMethod,
-    SecurityScheme,
-};
+use paperclip_core::v2::models::{DefaultApiRaw, DefaultOperationRaw, DefaultPathItemRaw, DefaultSchemaRaw, HttpMethod, SecurityScheme, Tag};
 use parking_lot::RwLock;
 
 use std::collections::BTreeMap;
@@ -282,6 +279,11 @@ where
         for map in api.paths.values_mut() {
             map.normalize();
         }
+    }
+
+    pub fn update_tags(&mut self, tags: Vec<Tag>)  {
+        let mut api = self.spec.write();
+        api.tags = tags;
     }
 }
 

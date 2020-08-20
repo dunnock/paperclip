@@ -478,6 +478,8 @@ where
         if self.operation.description.is_some() {
             operation.description = self.operation.description.clone();
         }
+
+        operation.tags = self.operation.tags.clone();
         operation
     }
 
