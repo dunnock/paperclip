@@ -86,7 +86,7 @@ pub fn emit_v2_operation(attr: TokenStream, input: TokenStream) -> TokenStream {
                     #wrapped_value
                 }
             ))
-            .expect("parsing wrapped block"),
+                .expect("parsing wrapped block"),
         );
     }
 
@@ -94,13 +94,13 @@ pub fn emit_v2_operation(attr: TokenStream, input: TokenStream) -> TokenStream {
         use syn::{FnArg, punctuated::Pair};
 
         let inputs = &item_ast.sig.inputs;
-        let params_ty: Punctuated<Box<syn::Type>,_> = inputs.pairs()
-        .filter_map(|pair| match pair {
-            Pair::Punctuated(FnArg::Typed(pat), p) => Some(Pair::new(pat.ty.clone(), Some(p.clone()))),
-            Pair::End(FnArg::Typed(pat)) => Some(Pair::new(pat.ty.clone(), None)),
-            _ => None,
-        })
-        .collect();
+        let params_ty: Punctuated<Box<syn::Type>, _> = inputs.pairs()
+            .filter_map(|pair| match pair {
+                Pair::Punctuated(FnArg::Typed(pat), p) => Some(Pair::new(pat.ty.clone(), Some(p.clone()))),
+                Pair::End(FnArg::Typed(pat)) => Some(Pair::new(pat.ty.clone(), None)),
+                _ => None,
+            })
+            .collect();
 
         let ident = &mut item_ast.sig.ident;
         let name = ident.clone();
@@ -110,7 +110,7 @@ pub fn emit_v2_operation(attr: TokenStream, input: TokenStream) -> TokenStream {
         let generics = &item_ast.sig.generics;
         let generics_where = &item_ast.sig.generics.where_clause;
         let generics_call = if !generics.params.is_empty() {
-            let params: Punctuated<Ident,_> = generics.params.pairs().filter_map(|pair|
+            let params: Punctuated<Ident, _> = generics.params.pairs().filter_map(|pair|
                 match pair {
                     Pair::Punctuated(syn::GenericParam::Type(gen), punct) => Some(Pair::new(gen.ident.clone(), Some(punct.clone()))),
                     Pair::End(syn::GenericParam::Type(gen)) => Some(Pair::new(gen.ident.clone(), None)),
@@ -134,11 +134,11 @@ pub fn emit_v2_operation(attr: TokenStream, input: TokenStream) -> TokenStream {
         };
         let main_code = item_ast.block;
 
-        let  tags_string = match  attr.into_iter().next() {
-            Some(t) => t.to_string(),
-            None => "".to_string()
+        let tags_string = match attr.into_iter().next() {
+            Some(t) => t.to_string().replace('"', "").split(',').map(|s| s.to_string()).collect::<Vec<String>>(),
+            None => Vec::new()
         };
-        let tags_string = quote!(#tags_string.to_string());
+        let tags = quote!(vec![#(#tags_string.to_string()),*]);
 
         quote!(
             fn #boxed_fn #generics(#inputs) -> #ret_fut #generics_where {
@@ -155,17 +155,13 @@ pub fn emit_v2_operation(attr: TokenStream, input: TokenStream) -> TokenStream {
                 #ret
             >  #generics_where {
                 let mut operation = paperclip::v2::models::DefaultOperationRaw::default();
-
-                if #tags_string != "" {
-                    operation.tags = #tags_string.replace('"', "").split(',').map(|s|s.to_string()).collect::<Vec<String>>();
-                }
-
+                operation.tags = #tags;
                 operation.summary = #summary;
                 operation.description = #description;
                 paperclip::actix::OperationWrapper::new(operation, #boxed_fn #generics_call)
             }
         )
-        .into()
+            .into()
     } else {
         quote!(
             #item_ast
@@ -232,7 +228,7 @@ pub fn emit_v2_operation(input: TokenStream) -> TokenStream {
                     #wrapped_value
                 }
             ))
-            .expect("parsing wrapped block"),
+                .expect("parsing wrapped block"),
         );
     }
 
@@ -272,7 +268,7 @@ pub fn emit_v2_errors(attrs: TokenStream, input: TokenStream) -> TokenStream {
                             let status_code = attr_value.base10_parse::<u16>()
                                 .map_err(|_| emit_error!(span, "Invalid u16 in code argument")).ok();
                             list.push((status_code, None, attr));
-                        },
+                        }
                         // "description" attribute updates last element in list
                         (Some("description"), Lit::Str(attr_value)) =>
                             if let Some(last_value) = list.last_mut() {
@@ -285,13 +281,13 @@ pub fn emit_v2_errors(attrs: TokenStream, input: TokenStream) -> TokenStream {
                             },
                         _ => emit_error!(span, "Invalid macro attribute. Should be plain u16, 'code = u16' or 'description = str'")
                     }
-                },
+                }
                 // Read plain status code as attribute.
                 NestedMeta::Lit(Lit::Int(attr_value)) => {
                     let status_code = attr_value.base10_parse::<u16>()
-                    .map_err(|_| emit_error!(span, "Invalid u16 in code argument")).ok();
+                        .map_err(|_| emit_error!(span, "Invalid u16 in code argument")).ok();
                     list.push((status_code, None, attr));
-                },
+                }
                 _ => emit_error!(span, "This macro supports only named attributes - 'code' (u16) or 'description' (str)")
             }
 
@@ -318,7 +314,7 @@ pub fn emit_v2_errors(attrs: TokenStream, input: TokenStream) -> TokenStream {
                         )
                         .unwrap_or_else(|_| String::new());
                     (code, description)
-                },
+                }
                 (None, _, _) => return None,
             };
 
@@ -698,7 +694,7 @@ fn handle_unnamed_field_struct(fields: &FieldsUnnamed, props_gen: &mut proc_macr
 /// Checks for `api_v2_empty` attributes and removes them.
 fn extract_openapi_attrs<'a>(
     field_attrs: &'a [Attribute],
-) -> impl Iterator<Item = Punctuated<syn::NestedMeta, syn::token::Comma>> + 'a {
+) -> impl Iterator<Item=Punctuated<syn::NestedMeta, syn::token::Comma>> + 'a {
     field_attrs.iter().filter_map(|a| match a.parse_meta() {
         Ok(Meta::List(list)) if list.path.is_ident("openapi") => Some(list.nested),
         _ => None,
@@ -725,9 +721,9 @@ fn check_empty_schema(item_ast: &DeriveInput) -> Option<TokenStream> {
     let needs_empty_schema = extract_openapi_attrs(&item_ast.attrs).any(|nested| {
         nested.len() == 1
             && match &nested[0] {
-                NestedMeta::Meta(Meta::Path(path)) => path.is_ident("empty"),
-                _ => false,
-            }
+            NestedMeta::Meta(Meta::Path(path)) => path.is_ident("empty"),
+            _ => false,
+        }
     });
 
     if needs_empty_schema {
@@ -880,28 +876,28 @@ impl SerdeRename {
         for meta in field_attrs.iter().filter_map(|a| a.parse_meta().ok()) {
             let inner_meta = match meta {
                 Meta::List(ref l)
-                    if l.path
-                        .segments
-                        .last()
-                        .map(|p| p.ident == "serde")
-                        .unwrap_or(false) =>
-                {
-                    &l.nested
-                }
+                if l.path
+                    .segments
+                    .last()
+                    .map(|p| p.ident == "serde")
+                    .unwrap_or(false) =>
+                    {
+                        &l.nested
+                    }
                 _ => continue,
             };
 
             for meta in inner_meta {
                 let rename = match meta {
                     NestedMeta::Meta(Meta::NameValue(ref v))
-                        if v.path
-                            .segments
-                            .last()
-                            .map(|p| p.ident == "rename")
-                            .unwrap_or(false) =>
-                    {
-                        &v.lit
-                    }
+                    if v.path
+                        .segments
+                        .last()
+                        .map(|p| p.ident == "rename")
+                        .unwrap_or(false) =>
+                        {
+                            &v.lit
+                        }
                     _ => continue,
                 };
 
@@ -942,28 +938,28 @@ impl SerdeProps {
         for meta in item_attrs.iter().filter_map(|a| a.parse_meta().ok()) {
             let inner_meta = match meta {
                 Meta::List(ref l)
-                    if l.path
-                        .segments
-                        .last()
-                        .map(|p| p.ident == "serde")
-                        .unwrap_or(false) =>
-                {
-                    &l.nested
-                }
+                if l.path
+                    .segments
+                    .last()
+                    .map(|p| p.ident == "serde")
+                    .unwrap_or(false) =>
+                    {
+                        &l.nested
+                    }
                 _ => continue,
             };
 
             for meta in inner_meta {
                 let global_rename = match meta {
                     NestedMeta::Meta(Meta::NameValue(ref v))
-                        if v.path
-                            .segments
-                            .last()
-                            .map(|p| p.ident == "rename_all")
-                            .unwrap_or(false) =>
-                    {
-                        &v.lit
-                    }
+                    if v.path
+                        .segments
+                        .last()
+                        .map(|p| p.ident == "rename_all")
+                        .unwrap_or(false) =>
+                        {
+                            &v.lit
+                        }
                     _ => continue,
                 };
 
